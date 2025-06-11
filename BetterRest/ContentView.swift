@@ -5,6 +5,7 @@
 //  Created by Alonso Acosta Enriquez on 07/08/24.
 //
 
+import CoreML
 import SwiftUI
 
 struct ContentView: View {
@@ -12,8 +13,37 @@ struct ContentView: View {
     @State private var sleepAmount = 8.0
     @State private var coffeAmount = 1
     
+    @State private var alertTitle = ""
+    @State private var alertmessage = ""
+    @State private var showAlert = false
+    
     func calculateBedtime() {
-        // todo
+        do {
+            let config = MLModelConfiguration()
+            let model = try SleepCalculator(configuration: config)
+            
+            let dateComponents = Calendar.current.dateComponents(
+                [.hour, .minute],
+                from: wakeUp
+            )
+            let hour = (dateComponents.hour ?? 0) * 60 * 60
+            let minute = (dateComponents.minute ?? 0) * 60
+            
+            let prediction = try model.prediction(
+                wake: Double(hour + minute),
+                estimatedSleep: sleepAmount,
+                coffee: Double(coffeAmount)
+            )
+            
+            let sleepTime = wakeUp - prediction.actualSleep
+            alertTitle = "Your ideal bedtime is..."
+            alertmessage = sleepTime.formatted(date: .omitted, time: .shortened)
+        } catch {
+            alertTitle = "Eror"
+            alertmessage = "Sorry, there was a problem calculating your bedtime."
+        }
+        
+        showAlert = true
     }
     
     var body: some View {
@@ -48,6 +78,11 @@ struct ContentView: View {
             .navigationTitle("BetterRest")
             .toolbar {
                 Button("Calculate", action: calculateBedtime)
+            }
+            .alert(alertTitle, isPresented: $showAlert) {
+                Button("OK") {  }
+            } message: {
+                Text(alertmessage)
             }
         }
     }
