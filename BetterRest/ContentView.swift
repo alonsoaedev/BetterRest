@@ -24,7 +24,7 @@ struct ContentView: View {
         return Calendar.current.date(from: components) ?? .now
     }
     
-    func calculateBedtime() {
+    var calculateBedtime: Date {
         do {
             let config = MLModelConfiguration()
             let model = try SleepCalculator(configuration: config)
@@ -42,15 +42,10 @@ struct ContentView: View {
                 coffee: Double(coffeAmount)
             )
             
-            let sleepTime = wakeUp - prediction.actualSleep
-            alertTitle = "Your ideal bedtime is..."
-            alertmessage = sleepTime.formatted(date: .omitted, time: .shortened)
+            return wakeUp - prediction.actualSleep
         } catch {
-            alertTitle = "Eror"
-            alertmessage = "Sorry, there was a problem calculating your bedtime."
+            return Date.now
         }
-        
-        showAlert = true
     }
     
     var body: some View {
@@ -81,16 +76,12 @@ struct ContentView: View {
                         }
                     }
                 }
+                
+                Section("Results") {
+                    Text("Your ideal bedtime is... \(calculateBedtime.formatted(date: .omitted, time: .shortened))")
+                }
             }
             .navigationTitle("BetterRest")
-            .toolbar {
-                Button("Calculate", action: calculateBedtime)
-            }
-            .alert(alertTitle, isPresented: $showAlert) {
-                Button("OK") {  }
-            } message: {
-                Text(alertmessage)
-            }
         }
     }
 }
